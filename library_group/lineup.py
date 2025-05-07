@@ -10,6 +10,7 @@ Goal: Maximize f(x).
 from library.solution import Solution
 import numpy as np
 import pandas as pd
+from tabulate import tabulate
 
 artists_df = pd.read_csv("../data/artists.csv", sep=";", index_col=0)
 conflicts_df = pd.read_csv("../ddata/conflicts.csv", sep=";", index_col=0)
@@ -21,38 +22,67 @@ conflicts_df = conflicts_df.apply(
 class LUSolution(Solution):
     def __init__(
         self,
+        repr: np.ndarray = None,
         artists_df: pd.DataFrame = artists_df,
         conflicts_df: pd.DataFrame = conflicts_df,
-        repr: str = None,
         stages: int = 5,
         slots: int = 7,
     ):
-        self.artists_df = artists_df
-        self.conflicts_df = conflicts_df
-        self.stages = stages
-        self.slots = slots
-        self.n_artists = artists_df.shape[0]
 
-        if not isinstance(artists_df, pd.DataFrame):
-            raise ValueError("artists_df must be a pandas DataFrame")
-        if not isinstance(conflicts_df, pd.DataFrame):
-            raise ValueError("conflicts_df must be a pandas DataFrame")
+        # --- Input Validation ---
         if not isinstance(stages, int) or stages <= 0:
-            raise ValueError("stages must be a positive integer")
+            raise ValueError("ERROR: stages must be a positive integer")
+        self.stages = stages
+
         if not isinstance(slots, int) or slots <= 0:
-            raise ValueError("slots must be a positive integer")
+            raise ValueError("ERROR: slots must be a positive integer")
+        self.slots = slots
+
+        if not repr:
+
+            if not isinstance(artists_df, pd.DataFrame):
+                raise ValueError("ERROR: artists_df must be a pandas DataFrame")
+
+            if (
+                "popularity" not in artists_df.columns
+                or "genre" not in artists_df.columns
+            ):
+                raise ValueError(
+                    "ERROR: artists_df must contain 'popularity' and 'genre' columns"
+                )
+
+            if not pd.api.types.is_integer_dtype(artists_df.index):
+                print(
+                    "WARNING: artists_df index is not integer type. Ensure it matches artist IDs used in repr."
+                )
+
+            if len(artists_df) != len(conflicts_df):
+                raise ValueError(
+                    "ERROR: artists_df and conflict_df must have same length."
+                )
+
+            self.n_artists = artists_df.shape[0]
+            self.artists_df = artists_df
+            self.conflicts_df = conflicts_df
+
+            self.repr = self.random_initial_representation()
+
+        if repr:
+            self.repr = self._validate_repr(repr)
+
+            self.n_artists = self.repr.size
+
+            # Instanciate dataframes to reference values of popularity, genre, artist names
+            # but only after repr is defined so random solution is not created
+            self.artists_df = artists_df
+            self.conflicts_df = conflicts_df
 
         # Ensure that exist one artist per time slot and stage
         total_required = self.stages * self.slots
         assert self.n_artists == total_required, (
-            f"Expected {total_required} artists for a {self.stages}x{self.slots} matrix, "
+            f"ERROR: Expected {total_required} artists for a {self.stages}x{self.slots} matrix, "
             f"but got {self.n_artists} artists."
         )
-
-        if repr:
-            repr = self._validate_repr(repr)
-
-        super().__init__(repr=repr)
 
     def random_initial_representation(self):
         """
@@ -70,7 +100,55 @@ class LUSolution(Solution):
 
         return matrix
 
-    def _validate_repr(self, repr: str): ...
+    def _validate_repr(self, repr_input):
+
+        if isinstance(repr_input, list):
+            try:
+                # Attempt conversion, check for ragged lists implicitly
+                repr_array = np.array(repr_input)
+                # DEBUG PRINT
+                print("INFO: Converting your lists of list into a np.array.")
+                if repr_array.ndim == 1 and isinstance(
+                    repr_array[0], list
+                ):  # Check if it became array of objects
+                    raise ValueError(
+                        "Input list seems ragged (inner lists have different lengths)."
+                    )
+            except ValueError as e:
+                raise ValueError(
+                    f"Could not convert list of lists to array. Original error: {e}"
+                )
+        elif isinstance(repr_input, np.ndarray):
+            repr_array = repr_input
+        else:
+            raise ValueError(
+                "Representation must be a 2D numpy array or a list of lists."
+            )
+
+        # Check for dimension
+        if repr_array.ndim != 2:
+            raise ValueError(
+                f"Representation must be 2D, but got {repr_array.ndim} dimensions."
+            )
+
+        # Check if data type is numeric (integer or float that can be cast)
+        if not np.issubdtype(repr_array.dtype, np.number):
+            raise ValueError(
+                f"Representation elements must be numeric, but got dtype {repr_array.dtype}."
+            )
+
+        # Ensure elements are integers (or cast if safe)
+        if not np.issubdtype(repr_array.dtype, np.integer):
+            if np.all(repr_array == repr_array.astype(int)):
+                print("INFO: Casting representation elements to integers.")
+                repr_array = repr_array.astype(int)
+            else:
+                raise ValueError(
+                    "Representation contains non-integer numeric values that cannot be safely cast."
+                )
+
+        print("DEBUG: Your repr has been validated")
+        return repr_array
 
     def score_prime_slots_popularity(self):
         """
@@ -84,15 +162,13 @@ class LUSolution(Solution):
 
         popularities_in_prime_slot = self.artists_df.loc[
             artist_id_in_prime_slot, "popularity"
-        ].tolist()
+        ]
 
-        score = sum(popularities_in_prime_slot) / (
-            self.stages * max(self.artists_df["popularity"])
+        score = popularities_in_prime_slot.sum() / (
+            self.stages * self.artists_df["popularity"].max()
         )
 
-        # Maximum possible in that scenario ?
-
-        return score
+        return round(score, 5)
 
     def score_genre_diversity(self):
         """
@@ -120,7 +196,7 @@ class LUSolution(Solution):
 
         score = unique_genres_list_normalized.mean()
 
-        return score
+        return round(score, 5)
 
     def penalty_conflict(self):
         """
@@ -131,7 +207,6 @@ class LUSolution(Solution):
         average   among   time   slots.   Since   conflicts  negatively  impact  the  lineup,  this  is  a
         penalization  score.
         """
-
         artists_per_slot = self.repr.T
 
         # Normal case 5 + 4 + 3 +2 + 1 = 15
@@ -157,7 +232,7 @@ class LUSolution(Solution):
         # Calcualte average
         average_penalty = np.mean(normalized_slot_conflicts)
 
-        return average_penalty
+        return round(average_penalty, 5)
 
     def fitness(self):
         prime_slot = self.score_prime_slots_popularity()
@@ -165,5 +240,97 @@ class LUSolution(Solution):
         conflict = self.penalty_conflict()
 
         score = prime_slot + genre - conflict
-
+        print(f"Debug: Prime={prime_slot}, Genre={genre}, Conflict={conflict}")
         return score
+
+    def get_artist_display_map(self):
+        """Helper to get the mapping from ID to display string (Name or ID)."""
+
+        artist_display_map = {}
+        name_col = None
+        if "name" in self.artists_df.columns:
+            name_col = "name"
+        elif "artist_name" in self.artists_df.columns:
+            name_col = "artist_name"
+
+        ids_in_schedule = np.unique(self.repr.flatten())
+
+        if name_col and self.artists_df.index.is_unique:
+            try:
+                artist_display_map = {
+                    id_val: (
+                        self.artists_df.loc[id_val, name_col]
+                        if id_val in self.artists_df.index
+                        else str(id_val)
+                    )
+                    for id_val in ids_in_schedule
+                }
+                return artist_display_map
+            except Exception:
+                pass
+
+        return {id_val: str(id_val) for id_val in ids_in_schedule}
+
+    def __repr__(self):
+        """Provides a string representation of the solution schedule and its scores."""
+        if (
+            not hasattr(self, "repr")
+            or not isinstance(self.repr, np.ndarray)
+            or self.repr.ndim != 2
+        ):
+            return f"<LUSolution object (repr not initialized or invalid)>"
+
+        schedule = self.repr
+        stages, slots = schedule.shape
+
+        # --- Part 1: Schedule Table ---
+        display_map = self.get_artist_display_map()
+        table_data = []
+        for i in range(stages):
+            row_data = [
+                display_map.get(schedule[i, j], str(schedule[i, j]))
+                for j in range(slots)
+            ]
+            table_data.append(row_data)
+
+        headers = [f"Slot {j+1}" for j in range(slots)]
+        row_indices = [f"Stage {i+1}" for i in range(stages)]
+
+        # I
+        table_string = tabulate(
+            table_data,
+            headers=headers,
+            showindex=row_indices,
+            tablefmt="fancy_grid",
+            stralign="center",
+            numalign="center",
+        )
+
+        # --- Part 2: Scores ---
+        try:
+            prime_score = self.score_prime_slots_popularity()
+            genre_score = self.score_genre_diversity()
+            conflict_penalty = self.penalty_conflict()
+            fitness_score = self.fitness()
+
+            scores_info = [
+                ("Prime Slot Popularity", prime_score),
+                ("Genre Diversity", genre_score),
+                ("Conflict Penalty", conflict_penalty),
+                ("Total Fitness", fitness_score),
+            ]
+            max_label_len = 0
+            if scores_info:
+                max_label_len = max(len(label) for label, _ in scores_info)
+
+            scores_lines = ["\nScores:"]
+            for label, value in scores_info:
+                scores_lines.append(f"  {label.ljust(max_label_len)} : {value:.5f}")
+            scores_string = "\n".join(scores_lines)
+
+        except Exception as e:
+            scores_string = f"\nScores: Error calculating scores - {e}"
+
+        # --- Combine all parts ---
+        header_info = f"<LUSolution ({stages} Stages, {slots} Slots)>"
+        return f"{header_info}\n{table_string}{scores_string}"
