@@ -34,13 +34,13 @@ def cyclic_crossover(parent1_repr, parent2_repr):
 
 def custom_pmxo(parent1_repr, parent2_repr, start_window=2, end_window=5):
     """
-    Perform custom partially mapped crossover between parent_1 and parent_2. Adapts PMXO to matrix.
+    Perform custom partially mapped crossover between parent 1 and parent 2. Adapts PMXO to matrix.
     - Swaps columns [start_window:end_window] between the parents.
     - Resolves conflicts in columns [0, 1, 5, 6] by replacing duplicates.
     """
 
-    children_1 = parent1_repr.deepcopy()
-    children_2 = parent2_repr.deepcopy()
+    children_1 = deepcopy(parent1_repr)
+    children_2 = deepcopy(parent2_repr)
 
     # Swap the crossover window
     children_1[:, start_window:end_window] = parent2_repr[:, start_window:end_window]
