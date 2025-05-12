@@ -13,7 +13,7 @@ import pandas as pd
 from tabulate import tabulate
 
 artists_df = pd.read_csv("../data/artists.csv", sep=";", index_col=0)
-conflicts_df = pd.read_csv("../ddata/conflicts.csv", sep=";", index_col=0)
+conflicts_df = pd.read_csv("../data/conflicts.csv", sep=";", index_col=0)
 conflicts_df = conflicts_df.apply(
     lambda x: x.str.replace(",", ".").astype(float) if x.name != "conflict" else x
 )
