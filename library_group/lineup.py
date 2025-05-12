@@ -11,11 +11,24 @@ from library.solution import Solution
 import numpy as np
 import pandas as pd
 from tabulate import tabulate
+from pathlib import Path
 
-artists_df = pd.read_csv("../data/artists.csv", sep=";", index_col=0)
-conflicts_df = pd.read_csv("../data/conflicts.csv", sep=";", index_col=0)
+HERE = Path(__file__).resolve().parent
+
+# 2. Point at the data folder (one level up, then into data/)
+DATA_DIR = HERE.parent / "data"
+
+# 3. Build full paths to each CSV:
+artists_csv = DATA_DIR / "artists.csv"
+conflicts_csv = DATA_DIR / "conflicts.csv"
+
+# 4. Load them exactly the same, no matter where you call the script from:
+artists_df = pd.read_csv(artists_csv, sep=";", index_col=0)
+conflicts_df = pd.read_csv(conflicts_csv, sep=";", index_col=0)
 conflicts_df = conflicts_df.apply(
-    lambda x: x.str.replace(",", ".").astype(float) if x.name != "conflict" else x
+    lambda col: (
+        col.str.replace(",", ".").astype(float) if col.name != "conflict" else col
+    )
 )
 
 
@@ -337,45 +350,60 @@ class LUSolution(Solution):
 
 
 class LUGASolution(LUSolution):
-    def __init__(self,
-                 mutation_function, # calable
-                 crossover_function, # calable
-                 repr: np.ndarray = None,
-                 artists_df: pd.DataFrame = artists_df,
-                 conflicts_df: pd.DataFrame = conflicts_df,
-                 stages: int = 5,
-                 slots: int = 7,
-                ):
-        
+    def __init__(
+        self,
+        mutation_function,  # calable
+        crossover_function,  # calable
+        repr: np.ndarray = None,
+        artists_df: pd.DataFrame = artists_df,
+        conflicts_df: pd.DataFrame = conflicts_df,
+        stages: int = 5,
+        slots: int = 7,
+    ):
+
         self.mutation_function = mutation_function
         self.crossover_function = crossover_function
 
-        super().__init__(repr=repr, artists_df=artists_df, conflicts_df=conflicts_df, stages=stages, slots=slots)
+        super().__init__(
+            repr=repr,
+            artists_df=artists_df,
+            conflicts_df=conflicts_df,
+            stages=stages,
+            slots=slots,
+        )
 
     def mutation(self, mut_prob):
         new_repr = self.mutation_function(self.repr, mut_prob)
-        return LUGASolution(distance_matrix=self.distance_matrix, starting_idx=self.starting_idx,
-                             repr=new_repr,
-                             mutation_function=self.mutation_function, 
-                             crossover_function=self.crossover_function
-                             )
-    def crossover(self, other_solution):
-        offspring1_repr, offspring2_repr = self.crossover_function(self.repr, other_solution.repr)
+        return LUGASolution(
+            distance_matrix=self.distance_matrix,
+            starting_idx=self.starting_idx,
+            repr=new_repr,
+            mutation_function=self.mutation_function,
+            crossover_function=self.crossover_function,
+        )
 
-        return (LUGASolution(repr = offspring1_repr,
-                             artists_df = self.artists_df,
-                             conflicts_df = self.conflicts_df,
-                             stages = self.stages,
-                             slots = self.slots,
-                             mutation_function = self.mutation_function, # calable
-                             crossover_function = self.crossover_function, 
-                            ),
-                LUGASolution(repr = offspring2_repr,
-                             artists_df = self.artists_df,
-                             conflicts_df = self.conflicts_df,
-                             stages = self.stages,
-                             slots = self.slots,
-                             mutation_function = self.mutation_function, # calable
-                             crossover_function = self.crossover_function, 
-                            ),
-                )
+    def crossover(self, other_solution):
+        offspring1_repr, offspring2_repr = self.crossover_function(
+            self.repr, other_solution.repr
+        )
+
+        return (
+            LUGASolution(
+                repr=offspring1_repr,
+                artists_df=self.artists_df,
+                conflicts_df=self.conflicts_df,
+                stages=self.stages,
+                slots=self.slots,
+                mutation_function=self.mutation_function,  # calable
+                crossover_function=self.crossover_function,
+            ),
+            LUGASolution(
+                repr=offspring2_repr,
+                artists_df=self.artists_df,
+                conflicts_df=self.conflicts_df,
+                stages=self.stages,
+                slots=self.slots,
+                mutation_function=self.mutation_function,  # calable
+                crossover_function=self.crossover_function,
+            ),
+        )
