@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from copy import deepcopy
 
 def cyclic_crossover(parent1_repr, parent2_repr):
     """
@@ -29,3 +30,61 @@ def cyclic_crossover(parent1_repr, parent2_repr):
                 offspring2_repr[row, col] = parent1_repr[row, col]
 
     return offspring1_repr, offspring2_repr
+
+
+def custom_pmxo(parent1_repr, parent2_repr, start_window=2, end_window=5):
+    """
+    Perform custom partially mapped crossover between parent 1 and parent 2. Adapts PMXO to matrix.
+    - Swaps columns [start_window:end_window] between the parents.
+    - Resolves conflicts in columns [0, 1, 5, 6] by replacing duplicates.
+    """
+
+    children_1 = deepcopy(parent1_repr)
+    children_2 = deepcopy(parent2_repr)
+
+    # Swap the crossover window
+    children_1[:, start_window:end_window] = parent2_repr[:, start_window:end_window]
+    children_2[:, start_window:end_window] = parent1_repr[:, start_window:end_window]
+
+    #Solve duplicates
+    def fix_child(child, original_parent):
+        fixed_child = child.deepcopy()
+        forbidden_values = set(child[:, start_window:end_window].flatten())
+
+        rows, cols = child.shape
+
+        def find_non_conflicting_value(conflict_value, child_matrix, original_matrix):
+            visited = set()
+            current_value = conflict_value
+
+            while True:
+                if current_value in visited:
+                    raise ValueError(f"Infinite loop detected for value {conflict_value}")
+                visited.add(current_value)
+
+                # Location of the value in the current child
+                locations = np.argwhere(child_matrix == current_value)
+                if len(locations) == 0:
+                    return current_value
+
+                row_idx, col_idx = locations[0]
+                candidate = original_matrix[row_idx, col_idx]
+
+                if candidate not in forbidden_values:
+                    return candidate
+                current_value = candidate
+
+        for row in range(rows):
+            for col in [0, 1, 5, 6]:
+                val = fixed_child[row, col]
+                if val in forbidden_values:
+                    new_val = find_non_conflicting_value(val, child, original_parent)
+                    fixed_child[row, col] = new_val
+                    forbidden_values.add(new_val)
+
+        return fixed_child
+
+    child1_fixed = fix_child(children_1, parent1_repr)
+    child2_fixed = fix_child(children_2, parent2_repr)
+
+    return child1_fixed, child2_fixed
