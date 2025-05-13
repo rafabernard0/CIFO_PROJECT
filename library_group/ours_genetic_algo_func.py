@@ -17,7 +17,7 @@ def genetic_algorithm(
     initial_population: list[Solution],
     max_gen: int,
     selection_algorithm: Callable,
-    maximization: bool = False,
+    maximization: bool = True,
     xo_prob: float = 0.9,
     mut_prob: float = 0.2,
     elitism: bool = True,
@@ -71,19 +71,19 @@ def genetic_algorithm(
             # 2.3.2. Choose an operator between crossover and replication
             # 2.3.3. Apply the operator to generate the offspring
             if random.random() < xo_prob:
-                offspring1, offspring2 = first_ind.crossover(second_ind)
+                offspring1_repr, offspring2_repr = first_ind.crossover(second_ind)
                 if verbose:
                     print(f"Applied crossover")
             else:
-                offspring1, offspring2 = deepcopy(first_ind), deepcopy(second_ind)
+                offspring1_repr, offspring2_repr = deepcopy(first_ind), deepcopy(second_ind)
                 if verbose:
                     print(f"Applied replication")
 
             if verbose:
-                print(f"Offspring:\n{offspring1}\n{offspring2}")
+                print(f"Offspring:\n{offspring1_repr}\n{offspring2_repr}")
 
             # 2.3.4. Apply mutation to the offspring
-            first_new_ind = offspring1.mutation(mut_prob)
+            first_new_ind = offspring1_repr.mutation(mut_prob)
             # 2.3.5. Insert the mutated individuals into P'
             new_population.append(first_new_ind)
 
@@ -91,7 +91,7 @@ def genetic_algorithm(
                 print(f"First mutated individual: {first_new_ind}")
 
             if len(new_population) < len(population):
-                second_new_ind = offspring2.mutation(mut_prob)
+                second_new_ind = offspring2_repr.mutation(mut_prob)
                 new_population.append(second_new_ind)
                 if verbose:
                     print(f"Second mutated individual: {first_new_ind}")
