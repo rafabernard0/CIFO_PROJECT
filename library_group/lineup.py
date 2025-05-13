@@ -51,7 +51,7 @@ class LUSolution(Solution):
             raise ValueError("ERROR: slots must be a positive integer")
         self.slots = slots
 
-        if not repr:
+        if repr is None:
 
             if not isinstance(artists_df, pd.DataFrame):
                 raise ValueError("ERROR: artists_df must be a pandas DataFrame")
@@ -80,7 +80,7 @@ class LUSolution(Solution):
 
             self.repr = self.random_initial_representation()
 
-        if repr:
+        if repr is not None:
             self.repr = self._validate_repr(repr)
 
             self.n_artists = self.repr.size
@@ -253,7 +253,7 @@ class LUSolution(Solution):
         conflict = self.penalty_conflict()
 
         score = prime_slot + genre - conflict
-        print(f"Debug: Prime={prime_slot}, Genre={genre}, Conflict={conflict}")
+
         return score
 
     def get_artist_display_map(self):
@@ -375,11 +375,13 @@ class LUGASolution(LUSolution):
     def mutation(self, mut_prob):
         new_repr = self.mutation_function(self.repr, mut_prob)
         return LUGASolution(
-            distance_matrix=self.distance_matrix,
-            starting_idx=self.starting_idx,
+            mutation_function=self.mutation_function,  # calable
+            crossover_function=self.crossover_function,  # calable
             repr=new_repr,
-            mutation_function=self.mutation_function,
-            crossover_function=self.crossover_function,
+            artists_df=self.artists_df,
+            conflicts_df=self.conflicts_df,
+            stages=self.stages,
+            slots=self.slots,
         )
 
     def crossover(self, other_solution):
