@@ -1,3 +1,5 @@
+# Put here selection algorithms functions (Elaborate 2)
+
 import random
 from copy import deepcopy
 

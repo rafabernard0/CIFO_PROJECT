@@ -8,6 +8,7 @@ def block_rotation_mutation(representation, mut_prob):
     Perform a mutation on the representation by rotating blocks of 4 artists.
     A 2x2 block is slided 35 times (from the left to the right and from up to down).
     """
+    # representation = representation.repr
     new_repr = deepcopy(representation)
 
     # There is 35 possibilities of occuring mutation (mutations are cumulative)
@@ -119,3 +120,5 @@ def semi_shuffle(representation, mut_prob, verbose=False):
         print(representation)
         print("New Representation after Semi-Shuffle:")
         print(new_repr)
+
+    return new_repr

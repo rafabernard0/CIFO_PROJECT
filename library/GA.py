@@ -5,7 +5,7 @@ from library.solution import Solution
 from typing import Callable
 
 
-def get_best_ind(population: list[Solution], maximization: bool):
+def get_best_individual(population: list[Solution], maximization: bool):
     fitness_list = [ind.fitness() for ind in population]
     if maximization:
         return population[fitness_list.index(max(fitness_list))]
@@ -57,7 +57,9 @@ def genetic_algorithm(
 
         # 2.2. If using elitism, insert best individual from P into P'
         if elitism:
-            new_population.append(deepcopy(get_best_ind(population, maximization)))
+            new_population.append(
+                deepcopy(get_best_individual(population, maximization))
+            )
 
         # 2.3. Repeat until P' contains N individuals
         while len(new_population) < len(population):
@@ -75,7 +77,9 @@ def genetic_algorithm(
                 if verbose:
                     print(f"Applied crossover")
             else:
-                offspring1_repr, offspring2_repr = deepcopy(first_ind), deepcopy(second_ind)
+                offspring1_repr, offspring2_repr = deepcopy(first_ind), deepcopy(
+                    second_ind
+                )
                 if verbose:
                     print(f"Applied replication")
 
@@ -101,14 +105,14 @@ def genetic_algorithm(
 
         if verbose:
             print(
-                f"Final best individual in generation: {get_best_ind(population, maximization).fitness()}"
+                f"Final best individual in generation: {get_best_individual(population, maximization).fitness()}"
             )
 
         # Store best individual for each generation
         generation_best_scores_df.iloc[gen - 1, 0] = gen
-        generation_best_scores_df.iloc[gen - 1, 1] = get_best_ind(
+        generation_best_scores_df.iloc[gen - 1, 1] = get_best_individual(
             population, maximization
         ).fitness()
 
     # 3. Return the best individual in P
-    return get_best_ind(population, maximization), generation_best_scores_df
+    return get_best_individual(population, maximization), generation_best_scores_df

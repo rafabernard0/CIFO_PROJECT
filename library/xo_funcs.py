@@ -2,16 +2,27 @@ import random
 import numpy as np
 from copy import deepcopy
 
+
 def cyclic_crossover(parent1_repr, parent2_repr):
     """
     Cyclic Crossover
     """
-    initial_random_idx = [random.randint(0, parent1_repr.shape[0] - 1), random.randint(0, parent1_repr.shape[1] - 1)]
+
+    # parent1_repr = parent1_repr.repr
+    # parent2_repr = parent2_repr.repr
+
+    initial_random_idx = [
+        random.randint(0, parent1_repr.shape[0] - 1),
+        random.randint(0, parent1_repr.shape[1] - 1),
+    ]
     cycle_idxs = [initial_random_idx]
     current_cycle_idx = initial_random_idx
     while True:
         value_parent2 = parent2_repr[current_cycle_idx[0], current_cycle_idx[1]]
-        next_cycle_idx = [np.where(parent1_repr==value_parent2)[0][0], np.where(parent1_repr==value_parent2)[1][0]]
+        next_cycle_idx = [
+            np.where(parent1_repr == value_parent2)[0][0],
+            np.where(parent1_repr == value_parent2)[1][0],
+        ]
         if next_cycle_idx in cycle_idxs:
             break
         cycle_idxs.append(next_cycle_idx)
@@ -31,6 +42,7 @@ def cyclic_crossover(parent1_repr, parent2_repr):
 
     return offspring1_repr, offspring2_repr
 
+
 def custom_pmxo(parent1_repr, parent2_repr):
     """
     Perform custom partially mapped crossover between parent 1 and parent 2. Adapts PMXO to matrix.
@@ -47,7 +59,9 @@ def custom_pmxo(parent1_repr, parent2_repr):
     start_window = random.randint(0, num_cols - window_size)
     end_window = start_window + window_size
 
-    print(f"Custom Partially Mapped Crossover Window: from column {start_window} to column {end_window}")
+    print(
+        f"Custom Partially Mapped Crossover Window: from column {start_window} to column {end_window}"
+    )
 
     children_1 = deepcopy(parent1_repr)
     children_2 = deepcopy(parent2_repr)
@@ -64,7 +78,9 @@ def custom_pmxo(parent1_repr, parent2_repr):
         outside_cols = [col for col in range(num_cols) if col not in crossover_cols]
 
         for row in range(num_rows):
-            used_values = set(fixed[row, crossover_cols])  # values already in the crossover segment of that row
+            used_values = set(
+                fixed[row, crossover_cols]
+            )  # values already in the crossover segment of that row
 
             for col in outside_cols:
                 val = fixed[row, col]
@@ -95,7 +111,7 @@ def custom_pmxo(parent1_repr, parent2_repr):
                     used_values.add(val)  # mark new value as used
 
         return fixed
-        
+
     child1_fixed = fix_child(children_1, parent1_repr, start_window, end_window)
     child2_fixed = fix_child(children_2, parent2_repr, start_window, end_window)
 

@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 from pathlib import Path
+import ast
 
 HERE = Path(__file__).resolve().parent
 

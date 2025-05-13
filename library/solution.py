@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class Solution(ABC):
     def __init__(self, repr=None):
         # To initialize a solution we need to know it's representation. If no representation is given, a solution is randomly initialized.
