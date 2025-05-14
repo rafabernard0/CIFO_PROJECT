@@ -3,6 +3,7 @@ import pandas as pd
 from copy import deepcopy
 from library.solution import Solution
 from typing import Callable
+from tqdm.auto import tqdm
 
 
 def get_best_individual(population: list[Solution], maximization: bool):
@@ -47,72 +48,74 @@ def genetic_algorithm(
         columns=["Generation", "Fitness"], index=[i for i in range(max_gen)]
     )
 
-    # 2. Repeat until termination condition
-    for gen in range(1, max_gen + 1):
+    # 2. Repeat reach max_gen generations
+    outer_bar = tqdm(
+        range(1, max_gen + 1),
+        desc="Generations",
+        unit="gen",
+        position=0,
+        leave=True,
+    )
+
+    inner_bar = tqdm(
+        total=len(initial_population),
+        desc="Gen  1",
+        unit="ind",
+        position=1,
+        leave=False,
+    )
+
+    for gen in outer_bar:
+        inner_bar.reset(total=len(population))
+        inner_bar.set_description(f"Gen {gen:2d}")
+
+        # Create an empty population P'
+        new_population = []
+
         if verbose:
             print(f"-------------- Generation: {gen} --------------")
-
-        # 2.1. Create an empty population P'
-        new_population = []
 
         # 2.2. If using elitism, insert best individual from P into P'
         if elitism:
             new_population.append(
                 deepcopy(get_best_individual(population, maximization))
             )
+            inner_bar.update()
 
         # 2.3. Repeat until P' contains N individuals
         while len(new_population) < len(population):
             # 2.3.1. Choose 2 individuals from P using a selection algorithm
-            first_ind = selection_algorithm(population, maximization)
-            second_ind = selection_algorithm(population, maximization)
+            p1 = selection_algorithm(population, maximization)
+            p2 = selection_algorithm(population, maximization)
 
             if verbose:
-                print(f"Selected individuals:\n{first_ind}\n{second_ind}")
+                tqdm.write(f"Selected:\n{p1}\n{p2}")
 
-            # 2.3.2. Choose an operator between crossover and replication
-            # 2.3.3. Apply the operator to generate the offspring
+            # -- Crossover / replication
             if random.random() < xo_prob:
-                offspring1_repr, offspring2_repr = first_ind.crossover(second_ind)
+                child1, child2 = p1.crossover(p2)
                 if verbose:
-                    print(f"Applied crossover")
+                    tqdm.write("Applied crossover")
             else:
-                offspring1_repr, offspring2_repr = deepcopy(first_ind), deepcopy(
-                    second_ind
-                )
+                child1, child2 = deepcopy(p1), deepcopy(p2)
                 if verbose:
-                    print(f"Applied replication")
+                    tqdm.write("Applied replication")
 
-            if verbose:
-                print(f"Offspring:\n{offspring1_repr}\n{offspring2_repr}")
-
-            # 2.3.4. Apply mutation to the offspring
-            first_new_ind = offspring1_repr.mutation(mut_prob)
-            # 2.3.5. Insert the mutated individuals into P'
-            new_population.append(first_new_ind)
-
-            if verbose:
-                print(f"First mutated individual: {first_new_ind}")
+            # -- Mutation + insertion
+            new_population.append(child1.mutation(mut_prob))
+            inner_bar.update()
 
             if len(new_population) < len(population):
-                second_new_ind = offspring2_repr.mutation(mut_prob)
-                new_population.append(second_new_ind)
-                if verbose:
-                    print(f"Second mutated individual: {first_new_ind}")
+                new_population.append(child2.mutation(mut_prob))
+                inner_bar.update()
 
-        # 2.4. Replace P with P'
         population = new_population
 
+        best = get_best_individual(population, maximization)
+        generation_best_scores_df.iloc[gen - 1] = (gen, best.fitness())
+
         if verbose:
-            print(
-                f"Final best individual in generation: {get_best_individual(population, maximization).fitness()}"
-            )
+            tqdm.write(f"Best fitness in generation {gen}: {best.fitness():.5f}")
 
-        # Store best individual for each generation
-        generation_best_scores_df.iloc[gen - 1, 0] = gen
-        generation_best_scores_df.iloc[gen - 1, 1] = get_best_individual(
-            population, maximization
-        ).fitness()
-
-    # 3. Return the best individual in P
+    inner_bar.close()  # tidy the second bar
     return get_best_individual(population, maximization), generation_best_scores_df
