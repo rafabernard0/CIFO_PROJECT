@@ -61,3 +61,26 @@ def tournament_selection(
         )
 
     return deepcopy(winner)
+
+
+
+
+def ranking_selection(population, fitnesses, s=1.7):
+    """
+    Perform linear ranking selection.
+    Assigns selection probability based on sorted rank, not raw fitness.
+    """
+    N = len(population)
+
+    # Sort population by fitness (higher is better)
+    sorted_pop = sorted(zip(population, fitnesses), key=lambda x: x[1], reverse=True)
+    sorted_population = [x[0] for x in sorted_pop]
+
+    # Assign probabilities using linear ranking formula
+    probabilities = [
+        ((2 - s) / N) + (2 * i * (s - 1)) / (N * (N - 1)) for i in range(N)
+    ]
+
+    # Select one individual based on these probabilities
+    selected = random.choices(sorted_population, weights=probabilities, k=1)[0]
+    return selected
