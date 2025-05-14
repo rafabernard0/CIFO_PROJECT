@@ -115,25 +115,34 @@ class LUSolution(Solution):
         return matrix
 
     def _validate_repr(self, repr_input):
+        """
+        Every representation must be a 2D numpy array or a list of lists.
+
+        If it is a list of lists, it must be converted to a numpy array.
+
+        - Check if it is a list.
+        - Attempt to convert to numpy array.
+        - Check if it is a numpy array.
+        - Check if it is a 2D numpy array.
+        - Check if it is numeric (integer or float).
+        - Check if it is integer (or can be cast).
+        - Check if it is 2D.
+        """
 
         if isinstance(repr_input, list):
             try:
-                # Attempt conversion, check for ragged lists implicitly
+                # Attempt conversion to numpy array
+                # This will raise an error if the list is ragged
                 repr_array = np.array(repr_input)
-                # DEBUG PRINT
-                print("INFO: Converting your lists of list into a np.array.")
-                if repr_array.ndim == 1 and isinstance(
-                    repr_array[0], list
-                ):  # Check if it became array of objects
-                    raise ValueError(
-                        "Input list seems ragged (inner lists have different lengths)."
-                    )
+
             except ValueError as e:
                 raise ValueError(
-                    f"Could not convert list of lists to array. Original error: {e}"
+                    f"Could not convert list of lists to numpy array. Original error: {e}"
                 )
+
         elif isinstance(repr_input, np.ndarray):
             repr_array = repr_input
+
         else:
             raise ValueError(
                 "Representation must be a 2D numpy array or a list of lists."
@@ -151,17 +160,16 @@ class LUSolution(Solution):
                 f"Representation elements must be numeric, but got dtype {repr_array.dtype}."
             )
 
-        # Ensure elements are integers (or cast if safe)
+        # Ensure elements are integers or can be cast to integers
         if not np.issubdtype(repr_array.dtype, np.integer):
-            if np.all(repr_array == repr_array.astype(int)):
-                print("INFO: Casting representation elements to integers.")
+            try:
+                # Attempt to cast to integer
                 repr_array = repr_array.astype(int)
-            else:
+            except ValueError as e:
                 raise ValueError(
-                    "Representation contains non-integer numeric values that cannot be safely cast."
+                    f"Could not convert non-integer to integers. Original error: {e}"
                 )
 
-        print("DEBUG: Your repr has been validated")
         return repr_array
 
     def score_prime_slots_popularity(self):
