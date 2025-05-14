@@ -89,7 +89,7 @@ def genetic_algorithm(
             p2 = selection_algorithm(population, maximization)
 
             if verbose:
-                tqdm.write(f"Selected:\n{p1}\n{p2}")
+                tqdm.write(f"Selected:\n{p1.repr}\n{p2.repr}")
 
             # -- Crossover / replication
             if random.random() < xo_prob:

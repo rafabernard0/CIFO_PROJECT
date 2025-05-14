@@ -31,3 +31,33 @@ def fitness_proportionate_selection(population: list[Solution], maximization: bo
         box_boundary += fitness_values[ind_idx]
         if random_nr <= box_boundary:
             return deepcopy(ind)
+
+
+def tournament_selection(
+    population: list[Solution],
+    maximization: bool,
+    tournament_size: int = 3,
+    verbose: bool = False,
+):
+
+    # Check if tournament size is valid
+    if tournament_size < 1:
+        raise ValueError("tournament_size must be ≥ 1")
+
+    # Select with replacement a random subset of individuals from the population
+    tournament = random.choices(population, k=tournament_size)
+
+    if verbose:
+        print(
+            f"Tournament individuals: {[(ind.repr, ind.fitness())for ind in tournament]}"
+        )
+
+    key = lambda ind: ind.fitness()
+    winner = max(tournament, key=key) if maximization else min(tournament, key=key)
+
+    if verbose:
+        print(
+            f"Best individual in tournament: {winner} with fitness {winner.fitness()}"
+        )
+
+    return deepcopy(winner)
