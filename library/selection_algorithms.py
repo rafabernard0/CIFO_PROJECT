@@ -35,22 +35,42 @@ def tournament_selection(
 
 
 
-def ranking_selection(population, fitnesses, s=1.7):
+def linear_ranking_selection(
+    population: list,
+    maximization: bool,
+    s: float = 1.7,
+    verbose: bool = False,
+):
     """
-    Perform linear ranking selection.
-    Assigns selection probability based on sorted rank, not raw fitness.
+    Linear ranking selection. Each individual is ranked and given a selection
+    probability based on position, not raw fitness.
     """
+    if not (1.0 <= s <= 2.0):
+        raise ValueError("s must be between 1.0 and 2.0")
+
     N = len(population)
 
-    # Sort population by fitness (higher is better)
-    sorted_pop = sorted(zip(population, fitnesses), key=lambda x: x[1], reverse=True)
-    sorted_population = [x[0] for x in sorted_pop]
+    # Sort population by fitness (descending if maximization, ascending otherwise)
+    sorted_pop = sorted(
+        population,
+        key=lambda ind: ind.fitness(),
+        reverse=maximization,
+    )
 
-    # Assign probabilities using linear ranking formula
+    # Assign linear ranking probabilities
     probabilities = [
         ((2 - s) / N) + (2 * i * (s - 1)) / (N * (N - 1)) for i in range(N)
     ]
 
-    # Select one individual based on these probabilities
-    selected = random.choices(sorted_population, weights=probabilities, k=1)[0]
-    return selected
+    if verbose:
+        for i, (ind, prob) in enumerate(zip(sorted_pop, probabilities)):
+            print(f"Rank {i+1}: Fitness={ind.fitness():.4f}, Prob={prob:.4f}")
+
+    # Select one individual based on probabilities
+    selected = random.choices(sorted_pop, weights=probabilities, k=1)[0]
+
+    if verbose:
+        print(f"Selected individual: {selected} with fitness {selected.fitness():.4f}")
+
+    return deepcopy(selected)
+
