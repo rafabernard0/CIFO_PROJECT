@@ -1,1 +1,0 @@
-#Put here selection algorithms functions (Elaborate 2)
