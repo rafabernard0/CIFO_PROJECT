@@ -8,9 +8,6 @@ def cyclic_crossover(parent1_repr, parent2_repr):
     Cyclic Crossover
     """
 
-    # parent1_repr = parent1_repr.repr
-    # parent2_repr = parent2_repr.repr
-
     initial_random_idx = [
         random.randint(0, parent1_repr.shape[0] - 1),
         random.randint(0, parent1_repr.shape[1] - 1),
