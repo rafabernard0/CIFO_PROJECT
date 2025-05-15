@@ -43,7 +43,7 @@ def cyclic_crossover(parent1_repr, parent2_repr):
     return offspring1_repr, offspring2_repr
 
 
-def custom_pmxo(parent1_repr, parent2_repr):
+def custom_pmxo(parent1_repr, parent2_repr, verbose=False):
     """
     Perform custom partially mapped crossover between parent 1 and parent 2. Adapts PMXO to matrix.
     - Randomly chooses a crossover window size and position.
@@ -59,9 +59,10 @@ def custom_pmxo(parent1_repr, parent2_repr):
     start_window = random.randint(0, num_cols - window_size)
     end_window = start_window + window_size
 
-    print(
-        f"Custom Partially Mapped Crossover Window: from column {start_window} to column {end_window}"
-    )
+    if verbose:
+        print(
+            f"Custom Partially Mapped Crossover Window: from column {start_window} to column {end_window}"
+        )
 
     children_1 = deepcopy(parent1_repr)
     children_2 = deepcopy(parent2_repr)
