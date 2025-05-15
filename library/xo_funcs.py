@@ -43,7 +43,7 @@ def cyclic_crossover(parent1_repr, parent2_repr):
     return offspring1_repr, offspring2_repr
 
 
-def custom_pmxo(parent1_repr, parent2_repr, verbose=False):
+def partially_mapped_crossover(parent1_repr, parent2_repr, verbose=False):
     """
     Perform custom partially mapped crossover between parent 1 and parent 2. Adapts PMXO to matrix.
     - Randomly chooses a crossover window size and position.
