@@ -178,6 +178,7 @@ class LUSolution(Solution):
         slots  (the  last  time  slot  on  each  stage).  This  score  is  calculated  by  normalizing  the
         total  popularity  of  artists  in  prime  slots  against  the  maximum  possible  total  popularity
         (e.g. if only most popular artists - score 100 - were scheduled on the prime slot)
+
         """
         # Extract the popularity of artists in prime slots
         artist_id_in_prime_slot = self.repr[:, -1]
@@ -231,8 +232,8 @@ class LUSolution(Solution):
         """
         artists_per_slot = self.repr.T
 
-        # Normal case 5 + 4 + 3 +2 + 1 = 15
-        worst_conflict_per_slot = sum(range(self.stages + 1))
+        # Normal case 4 + 3 + 2 + 1 + 0 = 10
+        worst_conflict_per_slot = sum(range(self.stages))
 
         normalized_slot_conflicts = []
         # Access slot composition
