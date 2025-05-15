@@ -33,8 +33,6 @@ def tournament_selection(
     return deepcopy(winner)
 
 
-
-
 def linear_ranking_selection(
     population: list,
     maximization: bool,
