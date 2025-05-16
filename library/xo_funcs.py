@@ -8,9 +8,6 @@ def cyclic_crossover(parent1_repr, parent2_repr):
     Cyclic Crossover
     """
 
-    # parent1_repr = parent1_repr.repr
-    # parent2_repr = parent2_repr.repr
-
     initial_random_idx = [
         random.randint(0, parent1_repr.shape[0] - 1),
         random.randint(0, parent1_repr.shape[1] - 1),
@@ -43,7 +40,7 @@ def cyclic_crossover(parent1_repr, parent2_repr):
     return offspring1_repr, offspring2_repr
 
 
-def custom_pmxo(parent1_repr, parent2_repr, verbose=False):
+def partially_mapped_crossover(parent1_repr, parent2_repr, verbose=False):
     """
     Perform custom partially mapped crossover between parent 1 and parent 2. Adapts PMXO to matrix.
     - Randomly chooses a crossover window size and position.
