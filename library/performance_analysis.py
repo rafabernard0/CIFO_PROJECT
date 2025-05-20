@@ -447,7 +447,7 @@ def get_abf_stats(df):
     print(f'Most Stable Comb: {best_stability}')
     print(f'Least Stable Comb: {low_stability}')
 
-    return styled_stats
+    return styled_stats, abf_stats
 
 
 #Assuming best fitness is at the 3rd column
