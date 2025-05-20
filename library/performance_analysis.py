@@ -209,8 +209,8 @@ def plot_BF_inter_run_boxplot(df, comb_ids:list=None, exp_comb:str=None):
         ))
 
     fig.update_layout(
-        title=dict(text=f'<b>Best Fitness Distribution per Run</b><br>Experience:{exp_comb}', x=0.5, xanchor='center') if exp_comb 
-        else dict(text='<b>Best Fitness Distribution per Run</b>', x=0.5, xanchor='center'),
+        title=dict(text=f'<b>Best Fitness Distribution across Run</b><br>Experience:{exp_comb}', x=0.5, xanchor='center') if exp_comb 
+        else dict(text='<b>Best Fitness Distribution across Run</b>', x=0.5, xanchor='center'),
         xaxis=dict(
             title='Combination ID',
             gridcolor='lightgray',
@@ -433,6 +433,7 @@ def get_abf_stats(df):
     # Combine into single DataFrame
     abf_stats = pd.concat([abf_mean, abf_std], axis=1).reset_index()
     abf_stats['ABF/STD'] = abf_stats['ABF'] / abf_stats['STD']
+    abf_stats['ABF^2/STD - ABF'] = (abf_stats['ABF']**2) / abf_stats['STD'] - abf_stats['ABF']
 
     idx_best_stability, idx_low_stability = abf_stats['ABF/STD'].argmax(), abf_stats['ABF/STD'].argmin()
     best_stability = abf_stats.loc[idx_best_stability, 'Combination']
