@@ -268,6 +268,141 @@ def comb_between_exp(df_exps:dict, comb_ids:list = None, metric='MBF', std=True)
         combination = df_one_comb_all_exp['Combination'][0]
         plot_ABF_MBF(df_one_comb_all_exp, metric=metric, std=std, plot_by_exp=True, exp_comb=combination)
 
+def exp_bf_per_comb(df_exps:dict):
+    any_exp = pd.read_csv(f'combination_search/final_results_{next(iter(df_exps))}.csv')
+    comb_ids = any_exp['Combination ID'].unique()
+    fig = go.Figure()
+    
+    for exp_name, description in df_exps.items():
+        df_exp = pd.read_csv(f'combination_search/final_results_{exp_name}.csv')
+        #for each experiment get the maximum fitness values for each combination
+        max_fitness = df_exp.groupby(['Combination', 'Combination ID'])['Fitness'].max().reset_index()
+
+        fig.add_trace(go.Scatter(
+            x=max_fitness['Combination ID'],
+            y=max_fitness['Fitness'],
+            mode='markers',
+            name=description,  # use the description as the trace name
+            marker=dict(size=10),
+            hovertemplate=(
+                "<b>Combination ID</b>: %{x}<br>"
+                "<b>Combination</b>: " + max_fitness['Combination'] + "<br>"
+                "<b>Fitness</b>: %{y:.3f}<br>"
+                "<b>Experiment</b>: " + description + "<br>"
+                "<extra></extra>"
+            )
+        ))
+
+    fig.update_layout(
+        title='<b>Best Fitness per Combination Across Experiments</b>',
+        xaxis=dict(
+            title='Combination ID',
+            gridcolor='lightgray',
+            type='category',
+            tickmode='array',
+            tickvals=comb_ids,
+            ticktext=[str(c) for c in comb_ids]
+        ),
+        yaxis=dict(
+            title='Best Fitness',
+            gridcolor='lightgray'
+        ),
+        plot_bgcolor='white',
+        legend=dict(
+            #title=dict(text='Experiments', side='top'),
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='right',
+            x=1
+        ),
+        margin=dict(l=50, r=50, b=80, t=80, pad=10),
+        height=600,
+        width=900
+    )
+
+    fig.show()
+
+def comb_bf_per_exp(df_exps: dict):
+    any_exp = pd.read_csv(f'combination_search/final_results_{next(iter(df_exps))}.csv')
+    comb_ids = any_exp['Combination ID'].unique()
+    fig = go.Figure()
+    
+    all_data = []
+    for exp_name, description in df_exps.items():
+        df_exp = pd.read_csv(f'combination_search/final_results_{exp_name}.csv')
+        # for each experiment get the maximum fitness values for each combination
+        max_fitness = df_exp.groupby(['Combination', 'Combination ID'])['Fitness'].max().reset_index()
+        max_fitness['Experiment'] = [description for _ in range(max_fitness.shape[0])]
+        all_data.append(max_fitness)
+
+    combined_df = pd.concat(all_data)
+
+    for comb_id in comb_ids:
+        comb_data = combined_df[combined_df['Combination ID'] == comb_id]
+        comb_name = comb_data['Combination'].iloc[0]  # Get the combination name
+        
+        # First add the line trace (this will connect the dots)
+        fig.add_trace(go.Scatter(
+            x=comb_data['Experiment'],
+            y=comb_data['Fitness'],
+            mode='lines+markers',  # This adds both lines and markers
+            name=f"Comb {comb_id}",
+            line=dict(color='gray', width=1),  # Customize line appearance
+            marker=dict(size=10, line=dict(width=1, color='DarkSlateGrey')),
+            hovertemplate=(
+                "<b>Exp</b>: %{x}<br>"
+                "<b>Comb</b>: %{meta[1]}<br>"
+                "<b>Fitness</b>: %{y:.3f}<extra></extra>"
+            ),
+            meta=[comb_id, comb_name],
+            showlegend=False
+        ))
+        
+        # Then add the marker trace (for better hover and legend appearance)
+        fig.add_trace(go.Scatter(
+            x=comb_data['Experiment'],
+            y=comb_data['Fitness'],
+            mode='markers',
+            name=f"Comb {comb_id}",
+            marker=dict(size=10, line=dict(width=1, color='DarkSlateGrey')),
+            hovertemplate=(
+                "<b>Exp</b>: %{x}<br>"
+                "<b>Comb</b>: %{meta[1]}<br>"
+                "<b>Fitness</b>: %{y:.3f}<extra></extra>"
+            ),
+            meta=[comb_id, comb_name],
+            showlegend=False,
+        ))
+
+    fig.update_layout(
+        title='<b>Fitness of all Combinations per Experiments</b>',
+        xaxis=dict(
+            title='Experiments',
+            gridcolor='lightgray',
+            tickvals=list(range(len(df_exps))),  # Numeric positions (0, 1, 2, ...)
+            ticktext=list(df_exps.values()),  # Experiment names as labels
+            range=[-0.5, len(df_exps) - 0.5],  # Tighten the x-axis range
+            showgrid=True,
+        ),
+        yaxis=dict(
+            title='Fitness Value',
+            gridcolor='lightgray'
+        ),
+        plot_bgcolor='white',
+        showlegend=True,  # Now show the legend
+        legend=dict(
+            title=dict(text='Combinations'),
+            orientation='h',
+            yanchor='bottom',
+            y=1.02,
+            xanchor='right',
+            #x=1
+        )
+    )
+    
+    fig.show()
+
 
 def get_abf_stats(df):
     """
