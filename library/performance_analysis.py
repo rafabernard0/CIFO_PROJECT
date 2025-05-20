@@ -106,7 +106,7 @@ def plot_ABF_MBF(df, metric, std=False, exp_comb=None, plot_by_exp=False):
     fig.show()
 
 
-def plot_BF_inter_run(df, comb_ids:list=None):
+def plot_BF_inter_run(df, comb_ids:list=None, exp_comb:str=None):
 
     """
     Plots best fitness per run for each configuration.
@@ -140,7 +140,8 @@ def plot_BF_inter_run(df, comb_ids:list=None):
         ))
 
     fig.update_layout(
-        title=dict(text='Best Fitness per Run', x=0.5, xanchor='center'),
+        title=dict(text=f'<b>Best Fitness per Run</b><br>Experience:{exp_comb}', x=0.5, xanchor='center') if exp_comb 
+        else dict(text='<b>Best Fitness per Run</b>', x=0.5, xanchor='center'),
         xaxis=dict(
             title='Run',
             gridcolor='lightgray',
@@ -164,6 +165,75 @@ def plot_BF_inter_run(df, comb_ids:list=None):
         margin=dict(l=50, r=50, b=100, t=80, pad=10),
         autosize=True,
         height=650,
+        width=850,
+    )
+
+    fig.show()
+
+def plot_BF_inter_run_boxplot(df, comb_ids:list=None, exp_comb:str=None):
+    """
+    Plots boxplots of best fitness per run for each configuration.
+    The objective is to evaluate the stability and distribution of results across runs.
+
+    Parameters:
+    - df: Dataset containing fitness data
+    - comb_ids: List of combination IDs to filter by (optional)
+    - exp_comb: Experiment combination name for title (optional)
+    """
+    
+    # get the best fitness per run for each combination
+    bf_run = df.groupby(['Combination', 'Combination ID', 'Run'])['Fitness'].max().reset_index()
+    
+    # filter combinations if IDs are provided
+    if comb_ids:
+        bf_run = bf_run[bf_run['Combination ID'].isin(comb_ids)]
+    
+    fig = go.Figure()
+
+    # get unique combinations
+    combs = bf_run['Combination ID'].unique()
+    
+    for comb in combs:
+        data = bf_run[bf_run['Combination ID'] == comb]
+        comb_str = data[data['Combination ID'] == comb][['Combination']].iloc[0, 0]
+
+        fig.add_trace(go.Box(
+            y=data['Fitness'],
+            name=f"{comb}: {comb_str}",
+            x=[comb]*len(data),
+            marker=dict(size=5),
+            line=dict(width=1),
+            hoverinfo='y',
+            legendgroup=f"group_{comb}",
+            showlegend=True
+        ))
+
+    fig.update_layout(
+        title=dict(text=f'<b>Best Fitness Distribution per Run</b><br>Experience:{exp_comb}', x=0.5, xanchor='center') if exp_comb 
+        else dict(text='<b>Best Fitness Distribution per Run</b>', x=0.5, xanchor='center'),
+        xaxis=dict(
+            title='Combination ID',
+            gridcolor='lightgray',
+            type='category',
+            #tickmode='array',
+            tickvals=combs,
+        ),
+        yaxis=dict(
+            title='Best Fitness',
+            gridcolor='lightgray',
+        ),
+        plot_bgcolor='white',
+        legend=dict(
+            title=dict(text='Combinations',
+                     side='top',
+                     font=dict(size=12)),
+            orientation='h',
+            y=-0.3,
+            font=dict(size=11),
+        ),
+        margin=dict(l=50, r=50, b=100, t=80, pad=10),
+        autosize=True,
+        height=600,
         width=850,
     )
 
