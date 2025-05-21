@@ -601,3 +601,91 @@ def plot_Xbest_per_exp(df_exps:dict, Xbest: int = 4, metric='MBF', std=False):
     )
     
     fig.show()
+
+
+def plot_Xbest_per_exp_box(df_exps:dict, Xbest: int = 4, metric='MBF'):
+
+    all_df_exps = []
+    for exp_name, description in df_exps.items():
+        df_exp = pd.read_csv(f'combination_search/final_results_{exp_name}.csv')
+        df_exp['Experience Name'] = [exp_name for _ in range(df_exp.shape[0])]
+        df_exp['Experience Description'] = [description for _ in range(df_exp.shape[0])]
+        all_df_exps.append(df_exp)
+    xbf_df = pd.concat(all_df_exps)
+
+    if metric == 'MBF':
+        by_comb_exp = xbf_df.groupby(['Combination', 'Combination ID', 'Experience Name', 'Experience Description',
+                                'Generation'])['Fitness'].median().reset_index()
+    if metric == 'ABF':
+        by_comb_exp = xbf_df.groupby(['Combination', 'Combination ID', 'Experience Name', 'Experience Description',
+                                'Generation'])['Fitness'].mean().reset_index()                                                            
+    
+    #CHOOSE ONLY X BEST combinations for each experiment 
+    # filter for the final fitness (last generation fitness)
+    final_all_exp = by_comb_exp[by_comb_exp['Generation'] == by_comb_exp['Generation'].max()]
+    top_combinations = []
+    for exp in df_exps.keys():
+        # filter only by this experiment
+        exp_data = final_all_exp[final_all_exp['Experience Name'] == exp]
+        # get top X combinations by fitness
+        top_X = exp_data.nlargest(Xbest, 'Fitness')
+        # store the combination identifiers
+        for _, row in top_X.iterrows():
+            top_combinations.append({
+                'Combination ID': row['Combination ID'],
+                'Experience Name': row['Experience Name']
+            })
+    
+    # filter the full data to only include top combinations
+    filtered_data = []
+    for comb in top_combinations:
+        mask = ((by_comb_exp['Combination ID'] == comb['Combination ID']) & 
+                (by_comb_exp['Experience Name'] == comb['Experience Name']))
+        filtered_data.append(by_comb_exp[mask])
+    
+    plot_df = pd.concat(filtered_data)
+    
+    # Create the plot
+    fig = go.Figure()
+    
+    # Group by combination to plot each one
+    grouped = plot_df.groupby(['Combination ID', 'Combination', 'Experience Name', 'Experience Description'])
+    unique_labels=[]
+    for (comb_id, comb, exp_name, exp_desc), group in grouped:
+        fig.add_trace(go.Box(
+            y=group['Fitness'],
+            #name = f'{comb_id}<br>{exp_name}',
+            name=f"Comb {comb_id}: {comb},<br>{exp_name}: {exp_desc}",
+            #x=group,
+            marker=dict(size=5),
+            line=dict(width=1),
+            hoverinfo='y',
+            #hovertemplate=f'Combination: {comb}<br>Experiment: {exp_name}<br>Generation: %{{x}}<br>Fitness: %{{y}}<extra></extra>'
+            legendgroup=f"group_{comb}",
+            showlegend=True
+        ))
+        unique_labels.append((f'{comb_id}<br>{exp_name}'))
+    
+    fig.update_layout(
+        title=f'Best fitness along the generation from the <b>{Xbest}</b> best of each experiment',
+        title_font=dict(family="Arial", size=18),
+        #xaxis=dict(title='Generation', gridcolor='lightgray'),
+        yaxis=dict(title='Fitness', gridcolor='lightgray'),
+        xaxis=dict(
+            gridcolor='lightgray',
+            type='category',
+            tickvals=list(range(len(unique_labels))),
+            ticktext=unique_labels
+        ),
+        plot_bgcolor='white',
+        legend=dict(
+            title=dict(text='Combination & Experiment', side='top', font=dict(size=12)),
+            orientation='h',
+            y=-0.3,
+            font=dict(size=11)),
+        margin=dict(l=50, r=50, b=100, t=80, pad=10),
+        height=650,
+        width=850,
+    )
+    
+    fig.show()
