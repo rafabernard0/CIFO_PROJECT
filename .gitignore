@@ -7,4 +7,10 @@ __pycache__/
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints
 
-LUSolution.ipynb 
+LUSolution.ipynb
+
+uv.lock
+
+pyproject.toml
+
+.python-version
