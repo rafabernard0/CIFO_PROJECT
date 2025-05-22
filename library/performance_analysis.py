@@ -7,46 +7,51 @@ import numpy as np
 import seaborn as sns
 
 
-def plot_ABF_MBF(df, metric, std=False, exp_comb=None, plot_by_exp=False):
+def plot_ABF_MBF(df, metric, std=False, exp_comb=None, comb_col=None, plot_by_exp=False):
+
     """
-    Plots average/median best fitness per generation for each configuration.
+    Plots average/median best fitness through generations.
 
     Parameters:
     - df: Dataset containing fitness data
     - metric: receives either 'ABF' (Average Best Fitness) or 'MBF' (Median Best Fitness) as arguments
     - std: If True it plots conjointly in the plot
-    - exp_comb: To set the specific experience/combination in the title
+    - exp_comb: To set the specific experience/combination in the title. 
+    - comb_col: Column Name that we want to group by. Only set when wanting to group by another column
+    or even that the column name is not the default. If given, exp_comb should not be given and the title
+    will remain simple.
 
         Specific Parameters to change only when calling this function inside the comb_between_exp function:
             - plot_by_exp: Change to True to plot based on different experiments
     """
 
-    if plot_by_exp:
-        comb_col = "Experience"
-        title_col = "Combination"
-    else:
-        comb_col = "Combination"
-        title_col = "Experience"
+    # when the comb_col is not specified (the usual)
+    if not comb_col: 
+        if plot_by_exp:
+            comb_col = 'Experience'
+            title_col = 'Combination'
+        else:
+            comb_col = 'Combination'
+            title_col = 'Experience'
 
-    if metric == "ABF":
-        xbf_df = df.groupby([comb_col, "Generation"])["Fitness"].mean().reset_index()
-        title = f"<b>Average Best Fitness per Generation</b><br>{title_col} {exp_comb}"
-    if metric == "MBF":
-        xbf_df = df.groupby([comb_col, "Generation"])["Fitness"].median().reset_index()
-        title = f"<b>Median Best Fitness per Generation</b><br>{title_col} {exp_comb}"
+    # define if it will group by the average or median
+    if metric == 'ABF':
+        xbf_df = df.groupby([comb_col, 'Generation'])['Fitness'].mean().reset_index()
+        title = f'<b>Average Best Fitness per Generation</b><br>{title_col} {exp_comb}' if exp_comb else '<b>Average Best Fitness per Generation</b>'
+    if metric == 'MBF':
+        xbf_df = df.groupby([comb_col, 'Generation'])['Fitness'].median().reset_index()
+        title = f'<b>Median Best Fitness per Generation</b><br>{title_col} {exp_comb}' if exp_comb else '<b>Median Best Fitness per Generation</b>'
 
     if std:
-        # it is equal either plotting mbf or abf
-        std_df = df.groupby([comb_col, "Generation"])["Fitness"].std().reset_index()
-        std_df.rename(columns={"Fitness": "std"}, inplace=True)
-        std_col = std_df[["std"]].copy()
-        xbf_df = pd.concat(
-            [xbf_df, std_col], axis=1
-        )  # adding the column for the fitness std
+        # it is equal either plotting mbf or abf        
+        std_df = df.groupby([comb_col, 'Generation'])['Fitness'].std().reset_index()
+        std_df.rename(columns={'Fitness': 'std'}, inplace=True)
+        std_col = std_df[['std']].copy()
+        xbf_df = pd.concat([xbf_df, std_col], axis=1) # adding the column for the fitness std
 
-        xbf_df["y_upper"] = xbf_df["Fitness"] + xbf_df["std"]
-        xbf_df["y_lower"] = xbf_df["Fitness"] - xbf_df["std"]
-        xbf_df.loc[xbf_df["y_lower"] < 0, "y_lower"] = 0
+        xbf_df['y_upper'] = xbf_df['Fitness'] + xbf_df['std']
+        xbf_df['y_lower'] = xbf_df['Fitness'] - xbf_df['std']
+        xbf_df.loc[xbf_df['y_lower'] < 0, 'y_lower'] = 0
 
     combs = df[comb_col].unique()
 
@@ -54,61 +59,53 @@ def plot_ABF_MBF(df, metric, std=False, exp_comb=None, plot_by_exp=False):
 
     for comb in combs:
         data = xbf_df[xbf_df[comb_col] == comb]
-        y_vals = data["Fitness"].values
-
-        fig.add_trace(
-            go.Scatter(
-                x=xbf_df["Generation"].values,
-                y=y_vals,
-                mode="lines+markers",
-                name=str(comb),
-                showlegend=True,
-                hovertemplate=f"{comb_col}: {comb}<br>Generation: %{{x}}<br>Fitness: %{{y}}<extra></extra>",
-            )
-        )
+        y_vals = data['Fitness'].values
+        
+        fig.add_trace(go.Scatter(
+            x=xbf_df['Generation'].values,
+            y=y_vals,
+            mode='lines+markers',
+            name=str(comb),
+            showlegend=True,
+            hovertemplate=f'{comb_col}: {comb}<br>Generation: %{{x}}<br>Fitness: %{{y}}<extra></extra>'
+        ))
         if std:
-            fig.add_trace(
-                go.Scatter(
-                    x=xbf_df["Generation"].values,
-                    y=data["y_upper"],
-                    mode="lines",
-                    name="+1 std Train",
-                    line=dict(width=0),
-                    showlegend=False,
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=xbf_df["Generation"],
-                    y=data["y_lower"],
-                    mode="lines",
-                    name="-1 std Train",
-                    fill="tonexty",
-                    fillcolor="rgba(0,0,255,0.1)",
-                    line=dict(width=0),
-                    showlegend=False,
-                )
-            )
+            fig.add_trace(go.Scatter(
+                x=xbf_df['Generation'].values,
+                y=data['y_upper'],
+                mode='lines',
+                name='+1 std Train',
+                line=dict(width=0),
+                showlegend=False
+            ))
+            fig.add_trace(go.Scatter(
+                x=xbf_df['Generation'],
+                y=data['y_lower'],
+                mode='lines',
+                name='-1 std Train',
+                fill='tonexty',
+                fillcolor='rgba(0,0,255,0.1)',
+                line=dict(width=0),
+                showlegend=False
+            ))
 
     fig.update_layout(
         title=title,
         title_font=dict(family="Arial", size=18),
         xaxis=dict(
-            title="Generation",
-            gridcolor="lightgray",
+            title='Generation',
+            gridcolor='lightgray',
         ),
         yaxis=dict(
-            title="Fitness",
-            gridcolor="lightgray",
+            title='Fitness',
+            gridcolor='lightgray',
         ),
-        plot_bgcolor="white",
+        plot_bgcolor='white',
         legend=dict(
-            title=dict(
-                text=f"{comb_col}",
-                side="top",  # positions title above the legend items
-                font=dict(size=12),
-            ),
-            orientation="h",
+            title=dict(text=f'{comb_col}',
+                     side='top',
+                     font=dict(size=12)),
+            orientation='h',
             y=-0.3,
             font=dict(size=11),
         ),
