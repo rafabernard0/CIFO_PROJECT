@@ -512,8 +512,8 @@ def get_abf_stats(df):
     ] - abf_stats["ABF"]
 
     idx_best_stability, idx_low_stability = (
-        abf_stats["ABF/STD"].argmax(),
-        abf_stats["ABF/STD"].argmin(),
+        abf_stats["ABF^2/STD - ABF"].argmax(),
+        abf_stats["ABF^2/STD - ABF"].argmin(),
     )
     best_stability = abf_stats.loc[idx_best_stability, "Combination"]
     low_stability = abf_stats.loc[idx_low_stability, "Combination"]
